@@ -442,24 +442,37 @@ void AsusSMC::initFanMod() {
 
     OSArray *tempArray = OSDynamicCast(OSArray, tempProps);
     OSArray *fanSpeedArray = OSDynamicCast(OSArray, fanSpeedProps);
+    
+    unsigned int tempArraySize = tempArray->getCount();
+    unsigned int fanSpeedArraySize = fanSpeedArray->getCount();
 
-    if (!tempArray || !fanSpeedArray) {
+    if (!tempArray || !fanSpeedArray || tempArraySize != fanSpeedArraySize) {
+        // evaluate WRAM
+        isFanModEnabled = false;
         return;
     }
 
-    for (unsigned int i = 0; i < tempArray->getCount(); ++i) {
+    for (unsigned int i = 0; i < tempArraySize; ++i) {
         OSNumber *tempNum = OSDynamicCast(OSNumber, tempArray->getObject(i));
         OSNumber *fanSpeedNum = OSDynamicCast(OSNumber, fanSpeedArray->getObject(i));
         if (tempNum != nullptr) {
             FTA1[i] = tempNum->unsigned32BitValue();
         } else {
             DBGLOG("fan", "Failed to get temperature at index %u", i);
+            break;
         }
         if (fanSpeedNum != nullptr) {
             FTA2[i] = tempNum->unsigned32BitValue();
         } else {
             DBGLOG("fan", "Failed to get fan speed at index %u", i);
+            break;
         }
+    }
+
+    if (!arrsize(FTA1) || !arrsize(FTA2) || arrsize(FTA1) != arrsize(FTA2)) {
+        // evaluate WRAM
+        isFanModEnabled = false;
+        return;
     }
 }
 
@@ -620,7 +633,6 @@ bool AsusSMC::refreshFan() {
     atomic_store_explicit(&currentFanSpeed, speed, memory_order_release);
 
     DBGLOG("fan", "refreshFan speed %u", speed);
-    DBGLOG("fan", "%u", wmi_get_devstate(ASUS_WMI_DEVID_CPU_FAN_CTRL));
 
     return speed != 10000;
 }
