@@ -104,12 +104,24 @@ private:
     void initALSDevice();
     void initEC0Device();
     void initBattery();
+    void initFanMod();
     void initVirtualKeyboard();
 
     void startATKDevice();
     
     bool refreshALS(bool post);
     bool refreshFan();
+    bool setFanSpeed();
+
+    uint32_t FTA1[22];
+    uint32_t FTA2[22];
+//    static constexpr uint32_t FTA1[] = { 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 0xFF };
+//    static constexpr uint32_t FTA2[] = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 160, 185, 205, 225, 245, 250, 255 };
+    static constexpr uint32_t FCTU = 2;
+    static constexpr uint32_t FCTD = 5;
+
+    uint32_t FHST[22] = {};
+    uint32_t FIDX {0}, FNUM {0}, FSUM {0}, FLST {0xff}, FCNT {0};
 
     void handleMessage(int code);
 
@@ -139,6 +151,7 @@ private:
     bool isTouchpadEnabled {true};
     bool isPanelBackLightOn {true};
     bool isTACHAvailable {false};
+    bool isFanModEnabled {false};
     bool isBatteryRSOCAvailable {false};
 
     uint32_t panelBrightnessLevel {16};
