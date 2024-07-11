@@ -121,6 +121,9 @@ void AsusSMC::stop(IOService *provider) {
     if (workloop && command_gate) {
         workloop->removeEventSource(command_gate);
     }
+    if (ec0Device) {
+        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
+    }
     OSSafeReleaseNULL(workloop);
     OSSafeReleaseNULL(poller);
     OSSafeReleaseNULL(command_gate);
@@ -417,6 +420,27 @@ void AsusSMC::initBattery() {
     }
 }
 
+int AsusSMC::readEcRam(uint32_t offset) {
+    uint32_t res;
+    OSNumber *argOffset = OSNumber::withNumber(offset, 32);
+    ec0Device->evaluateInteger("RRAM", &res, (OSObject **)&argOffset, 1);
+    argOffset->release();
+    
+    return res;
+}
+
+int AsusSMC::writeEcRam(uint32_t offset, uint32_t arg) {
+    uint32_t res;
+    OSObject *params[2];
+    params[0] = OSNumber::withNumber(offset, 32);
+    params[1] = OSNumber::withNumber(arg, 32);
+    ec0Device->evaluateInteger("WRAM", &res, params, 2);
+    params[0]->release();
+    params[1]->release();
+    
+    return res;
+}
+
 void AsusSMC::initFanMod() {
     if (!ec0Device || !isFanModEnabled) {
         return;
@@ -424,18 +448,9 @@ void AsusSMC::initFanMod() {
 
     uint32_t res;
 
-    OSObject *params[2];
+    res = writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL);
 
-    params[0] = OSNumber::withNumber(0x521, 32);
-    params[1] = OSNumber::withNumber(0x35, 32);
-    ec0Device->evaluateInteger("WRAM", &res, params, 2);
-
-    DBGLOG("fan", "WRAM 0x521 result %u", res);
-
-    ec0Device->evaluateInteger("RRAM", &res, (OSObject **)&params[0], 1);
-    DBGLOG("fan", "RRAM 0x521 %u", res);
-    params[0]->release();
-    params[1]->release();
+    DBGLOG("fan", "WRAM(%x, %x) result %u", FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL, res);
 
     OSObject *tempProps = getProperty("Temperatures");
     OSObject *fanSpeedProps = getProperty("FanSpeeds");
@@ -447,7 +462,7 @@ void AsusSMC::initFanMod() {
     unsigned int fanSpeedArraySize = fanSpeedArray->getCount();
 
     if (!tempArray || !fanSpeedArray || tempArraySize != fanSpeedArraySize) {
-        // evaluate WRAM
+        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
         isFanModEnabled = false;
         return;
     }
@@ -470,7 +485,7 @@ void AsusSMC::initFanMod() {
     }
 
     if (!arrsize(FTA1) || !arrsize(FTA2) || arrsize(FTA1) != arrsize(FTA2)) {
-        // evaluate WRAM
+        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
         isFanModEnabled = false;
         return;
     }

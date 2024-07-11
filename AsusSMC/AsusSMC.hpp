@@ -112,6 +112,12 @@ private:
     bool refreshALS(bool post);
     bool refreshFan();
     bool setFanSpeed();
+    int readEcRam(uint32_t offset);
+    int writeEcRam(uint32_t offset, uint32_t arg);
+    
+    static constexpr uint32_t FAN_MODE_EC_OFFSET = 0x521;
+    static constexpr uint32_t FAN_MODE_MANUAL = 0x35;
+    static constexpr uint32_t FAN_MODE_AUTO = 0X85;
 
     uint32_t FTA1[22];
     uint32_t FTA2[22];
