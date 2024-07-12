@@ -111,6 +111,13 @@ bool AsusSMC::start(IOService *provider) {
     return true;
 }
 
+bool AsusSMC::willTerminate(IOService *provider, IOOptionBits options) {
+    if (ec0Device) {
+        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
+    }
+    return super::willTerminate(provider, options);
+}
+
 void AsusSMC::stop(IOService *provider) {
     if (poller) {
         poller->cancelTimeout();
@@ -121,9 +128,9 @@ void AsusSMC::stop(IOService *provider) {
     if (workloop && command_gate) {
         workloop->removeEventSource(command_gate);
     }
-    if (ec0Device) {
-        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
-    }
+//    if (ec0Device) {
+//        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
+//    }
     OSSafeReleaseNULL(workloop);
     OSSafeReleaseNULL(poller);
     OSSafeReleaseNULL(command_gate);
@@ -425,7 +432,9 @@ int AsusSMC::readEcRam(uint32_t offset) {
     OSNumber *argOffset = OSNumber::withNumber(offset, 32);
     ec0Device->evaluateInteger("RRAM", &res, (OSObject **)&argOffset, 1);
     argOffset->release();
-    
+
+    DBGLOG("ECRAM", "RRAM(%x) result %u", offset, res);
+
     return res;
 }
 
@@ -437,7 +446,9 @@ int AsusSMC::writeEcRam(uint32_t offset, uint32_t arg) {
     ec0Device->evaluateInteger("WRAM", &res, params, 2);
     params[0]->release();
     params[1]->release();
-    
+
+    DBGLOG("ECRAM", "WRAM(%x, %x) result %u", offset, arg, res);
+
     return res;
 }
 
@@ -450,7 +461,7 @@ void AsusSMC::initFanMod() {
 
     res = writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL);
 
-    DBGLOG("fan", "WRAM(%x, %x) result %u", FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL, res);
+    DBGLOG("fan", "Manual control mode result %u", res);
 
     OSObject *tempProps = getProperty("Temperatures");
     OSObject *fanSpeedProps = getProperty("FanSpeeds");
@@ -464,6 +475,7 @@ void AsusSMC::initFanMod() {
     if (!tempArray || !fanSpeedArray || tempArraySize != fanSpeedArraySize) {
         writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
         isFanModEnabled = false;
+        DBGLOG("fan", "Temperatures or FanSpeeds empty or size mismatch, reset fan mode to auto");
         return;
     }
 
@@ -472,14 +484,14 @@ void AsusSMC::initFanMod() {
         OSNumber *fanSpeedNum = OSDynamicCast(OSNumber, fanSpeedArray->getObject(i));
         if (tempNum != nullptr) {
             FTA1[i] = tempNum->unsigned32BitValue();
+            DBGLOG("fan", "Temperature %u", FTA1[i]);
         } else {
-            DBGLOG("fan", "Failed to get temperature at index %u", i);
             break;
         }
         if (fanSpeedNum != nullptr) {
-            FTA2[i] = tempNum->unsigned32BitValue();
+            FTA2[i] = fanSpeedNum->unsigned32BitValue();
+            DBGLOG("fan", "Fan Speed %u", FTA2[i]);
         } else {
-            DBGLOG("fan", "Failed to get fan speed at index %u", i);
             break;
         }
     }
@@ -487,6 +499,7 @@ void AsusSMC::initFanMod() {
     if (!arrsize(FTA1) || !arrsize(FTA2) || arrsize(FTA1) != arrsize(FTA2)) {
         writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
         isFanModEnabled = false;
+        DBGLOG("fan", "Temperatures or FanSpeeds entry invalid, reset fan mode to auto");
         return;
     }
 }

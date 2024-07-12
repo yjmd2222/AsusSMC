@@ -42,6 +42,7 @@ class AsusSMC : public IOService {
 public:
     bool init(OSDictionary *dictionary) override;
     bool start(IOService *provider) override;
+    bool willTerminate(IOService *provider, IOOptionBits options) override;
     void stop(IOService *provider) override;
     IOService *probe(IOService *provider, SInt32 *score) override;
     IOReturn message(uint32_t type, IOService *provider, void *argument) override;
