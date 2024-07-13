@@ -7,6 +7,8 @@
 [kbl] Whiskey Lake	patches/kbl_whiskeylake.txt
 [kbl] Coffee Lake	patches/kbl_coffeelake.txt
 [kbl] Ice Lake	patches/kbl_icelake.txt
+[fan] --> Fan mode	patches/NullPatch.txt
+[fan] Fan mode reset	patches/fan_reset.txt
 [fn] --> FN keys	patches/NullPatch.txt
 [fn] ALS toggle	patches/als_toggle.txt
 [fn] Media - arrow keys	patches/media_arrow.txt
@@ -23,5 +25,3 @@
 [fn] F10 key	patches/f10.txt
 [fn] F11 key	patches/f11.txt
 [fn] F12 key	patches/f12.txt
-[fan] --> Fan mode	patches/NullPatch.txt
-[fan] Fan mode reset	patches/fan_reset.txt
