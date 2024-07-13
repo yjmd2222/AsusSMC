@@ -1,0 +1,42 @@
+#Maintained by yjmd2222
+#See https://github.com/hieplpvip/AsusSMC/wiki/Installation-Instruction
+#for how to use
+
+into device label YJMD remove_entry;
+into scope label _SB.PCI0.LPCB.EC0 insert begin
+Device (YJMD)\n
+{\n
+    Name (_ADR, Zero)  // _ADR: Address\n
+    Method (_INI, 0, NotSerialized)  // _INI: Initialize\n
+    {\n
+        FATO ()\n
+    }\n
+    Method (FATO, 0, NotSerialized)\n
+    {\n
+        Local0 = \_SB.PCI0.LPCB.EC0.WRAM (0x0521, 0x85)\n
+        If (Local0)\n
+        {\n
+            Debug = "fan: Set fan mode to auto"\n
+        }\n
+        Else\n
+        {\n
+            Debug = "fan: Setting fan mode to auto failed"\n
+        }\n
+    }\n
+    Method (_STA, 0, NotSerialized)  // _STA: Status\n
+    {\n
+        Local0 = 0x2710\n
+        While (!(ECAV () && (Local0 > Zero)))\n
+        {\n
+            Sleep (One)\n
+            Local0--\n
+        }\n
+        If ((Local0 == Zero))\n
+        {\n
+            Debug = "fan: Preparing fan mode to auto timed out"\n
+            Return (Zero)\n
+        }\n
+        Return (0x0F)\n
+    }\n
+}
+end;
