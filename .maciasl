@@ -23,5 +23,5 @@
 [fn] F10 key	patches/f10.txt
 [fn] F11 key	patches/f11.txt
 [fn] F12 key	patches/f12.txt
-[fan] --> Fan mode      patches/NullPatch.txt
-[fan] Fan mode reset    patches/fan_reset.txt
+[fan] --> Fan mode	patches/NullPatch.txt
+[fan] Fan mode reset	patches/fan_reset.txt
