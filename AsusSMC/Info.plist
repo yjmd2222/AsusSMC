@@ -44,25 +44,25 @@
 			<key>Temperatures</key>
 			<array>
 				<integer>40</integer>
-				<integer>42</integer>
-				<integer>44</integer>
+				<integer>43</integer>
 				<integer>46</integer>
-				<integer>48</integer>
-				<integer>50</integer>
+				<integer>49</integer>
 				<integer>52</integer>
-				<integer>54</integer>
-				<integer>56</integer>
+				<integer>55</integer>
 				<integer>58</integer>
-				<integer>60</integer>
-				<integer>63</integer>
-				<integer>66</integer>
-				<integer>69</integer>
+				<integer>61</integer>
+				<integer>64</integer>
+				<integer>67</integer>
+				<integer>70</integer>
 				<integer>72</integer>
-				<integer>75</integer>
+				<integer>74</integer>
+				<integer>76</integer>
 				<integer>78</integer>
-				<integer>81</integer>
+				<integer>80</integer>
+				<integer>82</integer>
 				<integer>84</integer>
-				<integer>87</integer>
+				<integer>86</integer>
+				<integer>88</integer>
 				<integer>90</integer>
 				<integer>255</integer>
 			</array>
