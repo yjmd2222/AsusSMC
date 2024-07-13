@@ -25,6 +25,7 @@
 		4CA82AB2251A07F300B02E1C /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4CA82AB1251A07F000B02E1C /* libkmod.a */; };
 		4CC5A8C2244611E600AB526E /* com.hieplpvip.AsusSMCDaemon.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C4FE6BC2156A4FB0074AD08 /* com.hieplpvip.AsusSMCDaemon.plist */; };
 		4CC5A8C3244611EA00AB526E /* install_daemon.sh in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4C32364A2159051A00700256 /* install_daemon.sh */; };
+		ACA7F7892C42B3BE00BBDC7A /* AsusSMCFanDataProvider.kext in CopyFiles */ = {isa = PBXBuildFile; fileRef = ACA7F7882C42B3B600BBDC7A /* AsusSMCFanDataProvider.kext */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +54,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 16;
 			files = (
+				ACA7F7892C42B3BE00BBDC7A /* AsusSMCFanDataProvider.kext in CopyFiles */,
 				4CC5A8C2244611E600AB526E /* com.hieplpvip.AsusSMCDaemon.plist in CopyFiles */,
 				4CC5A8C3244611EA00AB526E /* install_daemon.sh in CopyFiles */,
 			);
@@ -128,6 +130,7 @@
 		4C4FE6C22156AA810074AD08 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		4CA82AB1251A07F000B02E1C /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libkmod.a; path = MacKernelSDK/Library/x86_64/libkmod.a; sourceTree = "<group>"; };
 		4CDDD8C822E899F700CC38F4 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+		ACA7F7882C42B3B600BBDC7A /* AsusSMCFanDataProvider.kext */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.kernel-extension"; path = AsusSMCFanDataProvider.kext; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -167,6 +170,7 @@
 				4C4FE6C22156AA810074AD08 /* README.md */,
 				4CDDD8C822E899F700CC38F4 /* CHANGELOG.md */,
 				4C27D2BF218B647F0089409B /* LICENSE.md */,
+				ACA7F7882C42B3B600BBDC7A /* AsusSMCFanDataProvider.kext */,
 			);
 			sourceTree = "<group>";
 		};
