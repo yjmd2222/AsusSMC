@@ -21,10 +21,11 @@ A VirtualSMC plugin provides native support for ALS, keyboard backlight and Fn k
 
 #### Boot arguments
 - Add `-asussmcdbg` to enable debug printing (available in DEBUG binaries).
-- Add `-asussmcfanmod` to enable fan speed mod (see [this](AsusSMCFanDataProvider.kext/Contents/Info.plist))
+- Add `-asussmcfanmod` to enable fan speed mod (see [this](AsusSMCFanDataProvider.kext/Contents/Info.plist)).
 
 #### How to install
 - Instruction is available in the Wiki.
+- For fan speed mod, use the patch `[fan] Fan mode reset`.
 
 #### Credits
 - [Apple](https://www.apple.com) for macOS
