@@ -111,13 +111,6 @@ bool AsusSMC::start(IOService *provider) {
     return true;
 }
 
-bool AsusSMC::willTerminate(IOService *provider, IOOptionBits options) {
-    if (ec0Device) {
-        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
-    }
-    return super::willTerminate(provider, options);
-}
-
 void AsusSMC::stop(IOService *provider) {
     if (poller) {
         poller->cancelTimeout();
@@ -128,9 +121,6 @@ void AsusSMC::stop(IOService *provider) {
     if (workloop && command_gate) {
         workloop->removeEventSource(command_gate);
     }
-//    if (ec0Device) {
-//        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
-//    }
     OSSafeReleaseNULL(workloop);
     OSSafeReleaseNULL(poller);
     OSSafeReleaseNULL(command_gate);
@@ -428,6 +418,7 @@ void AsusSMC::initBattery() {
 }
 
 int AsusSMC::readEcRam(uint32_t offset) {
+    // Read EC RAM from offset
     uint32_t res;
     OSNumber *argOffset = OSNumber::withNumber(offset, 32);
     ec0Device->evaluateInteger("RRAM", &res, (OSObject **)&argOffset, 1);
@@ -439,6 +430,7 @@ int AsusSMC::readEcRam(uint32_t offset) {
 }
 
 int AsusSMC::writeEcRam(uint32_t offset, uint32_t arg) {
+    // Write arg to EC RAM at offset
     uint32_t res;
     OSObject *params[2];
     params[0] = OSNumber::withNumber(offset, 32);
@@ -453,12 +445,15 @@ int AsusSMC::writeEcRam(uint32_t offset, uint32_t arg) {
 }
 
 void AsusSMC::initFanMod() {
+    // Initialize fan mod
     if (!ec0Device || !isFanModEnabled) {
         return;
     }
 
     uint32_t res;
 
+    // This disables built-in EC fan mechanism, so only the kext can control the fan
+    // Resetting this is needed on reboot, use an SSDT
     res = writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL);
 
     DBGLOG("fan", "Manual control mode result %u", res);

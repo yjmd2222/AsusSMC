@@ -42,7 +42,6 @@ class AsusSMC : public IOService {
 public:
     bool init(OSDictionary *dictionary) override;
     bool start(IOService *provider) override;
-    bool willTerminate(IOService *provider, IOOptionBits options) override;
     void stop(IOService *provider) override;
     IOService *probe(IOService *provider, SInt32 *score) override;
     IOReturn message(uint32_t type, IOService *provider, void *argument) override;
@@ -113,12 +112,15 @@ private:
     bool refreshALS(bool post);
     bool refreshFan();
     bool setFanSpeed();
+
     int readEcRam(uint32_t offset);
     int writeEcRam(uint32_t offset, uint32_t arg);
-    
+
     static constexpr uint32_t FAN_MODE_EC_OFFSET = 0x521;
     static constexpr uint32_t FAN_MODE_MANUAL = 0x35;
     static constexpr uint32_t FAN_MODE_AUTO = 0X85;
+
+//    static constexpr uint32_t
 
     uint32_t FTA1[22];
     uint32_t FTA2[22];
