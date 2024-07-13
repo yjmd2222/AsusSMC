@@ -112,6 +112,10 @@ bool AsusSMC::start(IOService *provider) {
 }
 
 void AsusSMC::stop(IOService *provider) {
+    if (isFanModEnabled) {
+        IOFree(FTA1, fanPropArraySize);
+        IOFree(FTA2, fanPropArraySize);
+    }
     if (poller) {
         poller->cancelTimeout();
     }
@@ -322,13 +326,12 @@ void AsusSMC::initALSDevice() {
 }
 
 void AsusSMC::initEC0Device() {
-    isTACHAvailable = true;
-    isFanModEnabled = checkKernelArgument("-asussmcfanmod");
+    isFanModEnabled = isTACHAvailable = false;
+    setProperty("IsFanSpeedModSupported", kOSBooleanFalse);
 
     auto dict = IOService::nameMatching("AppleACPIPlatformExpert");
     if (!dict) {
         SYSLOG("ec0", "WTF? Failed to create matching dictionary");
-        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -337,7 +340,6 @@ void AsusSMC::initEC0Device() {
 
     if (!acpi) {
         SYSLOG("ec0", "WTF? No ACPI");
-        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -346,7 +348,6 @@ void AsusSMC::initEC0Device() {
     dict = IOService::nameMatching("PNP0C09");
     if (!dict) {
         SYSLOG("ec0", "WTF? Failed to create matching dictionary");
-        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -355,7 +356,6 @@ void AsusSMC::initEC0Device() {
 
     if (!deviceIterator) {
         SYSLOG("ec0", "No iterator");
-        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -364,44 +364,36 @@ void AsusSMC::initEC0Device() {
 
     if (!ec0Device) {
         SYSLOG("ec0", "PNP0C09 device not found");
-        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
     if (ec0Device->validateObject("TACH") != kIOReturnSuccess || !refreshFan()) {
         SYSLOG("ec0", "No functional method TACH on EC0 device");
-        isFanModEnabled = isTACHAvailable = false;
     }
     
-//    if (ec0Device->validateObject("ST98") != kIOReturnSuccess && !isFanModEnabled) {
-//        SYSLOG("ec0", "No method ST98 on EC0 device");
-//        isFanModEnabled = false;
-//    }
-    
-    if (ec0Device->validateObject("ST84") != kIOReturnSuccess && !isFanModEnabled) {
-        SYSLOG("ec0", "No method ST84 on EC0 device");
-        isFanModEnabled = false;
-    }
-    
-    if (ec0Device->validateObject("RRAM") != kIOReturnSuccess && !isFanModEnabled) {
-        SYSLOG("ec0", "No method RRAM on EC0 device");
-        isFanModEnabled = false;
-    }
-    
-    if (ec0Device->validateObject("WRAM") != kIOReturnSuccess && !isFanModEnabled) {
-        SYSLOG("ec0", "No method WRAM on EC0 device");
-        isFanModEnabled = false;
-    }
-
-    if (isFanModEnabled) {
-        setProperty("IsFanSpeedModSupported", kOSBooleanTrue);
-    } else {
-        setProperty("IsFanSpeedReadSupported", kOSBooleanTrue);
-    }
+    isTACHAvailable = true;
 
     SYSLOG("ec0", "Found EC0 Device %s", ec0Device->getName());
 
-    initFanMod();
+    if (checkKernelArgument("-asussmcfanmod")) {
+
+        if (ec0Device->validateObject("RRAM") != kIOReturnSuccess) {
+            SYSLOG("ec0", "No method RRAM on EC0 device");
+            return;
+        }
+
+        if (ec0Device->validateObject("WRAM") != kIOReturnSuccess) {
+            SYSLOG("ec0", "No method WRAM on EC0 device");
+            return;
+        }
+        if (ec0Device->validateObject("ST84") != kIOReturnSuccess) {
+            SYSLOG("ec0", "No method ST84 on EC0 device");
+            return;
+        }
+
+        isFanModEnabled = true;
+        initFanMod();
+    }
 }
 
 void AsusSMC::initBattery() {
@@ -446,10 +438,6 @@ int AsusSMC::writeEcRam(uint32_t offset, uint32_t arg) {
 
 void AsusSMC::initFanMod() {
     // Initialize fan mod
-    if (!ec0Device || !isFanModEnabled) {
-        return;
-    }
-
     OSObject *tempProps = getProperty("Temperatures");
     OSObject *fanSpeedProps = getProperty("FanSpeeds");
     
@@ -459,10 +447,9 @@ void AsusSMC::initFanMod() {
         return;
     }
 
-
     OSArray *tempArray = OSDynamicCast(OSArray, tempProps);
     OSArray *fanSpeedArray = OSDynamicCast(OSArray, fanSpeedProps);
-    
+
     uint32_t tempArraySize = tempArray->getCount();
     uint32_t fanSpeedArraySize = fanSpeedArray->getCount();
 
@@ -499,19 +486,18 @@ void AsusSMC::initFanMod() {
             return;
         }
     }
-    
-    uint32_t res;
 
     // This disables built-in EC fan mechanism, so only the kext can control the fan
     // Resetting this is needed on reboot, use an SSDT
-    res = writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL);
-
-    if (res == 0) {
+    if (writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL) == 0) {
         IOFree(FTA1, fanPropArraySize);
         IOFree(FTA2, fanPropArraySize);
         isFanModEnabled = false;
         DBGLOG("fan", "Setting manual control mode failed");
+        return;
     }
+
+    setProperty("IsFanSpeedModSupported", kOSBooleanTrue);
 }
 
 bool AsusSMC::setFanSpeed() {
@@ -519,7 +505,7 @@ bool AsusSMC::setFanSpeed() {
         return false;
     }
 
-    int temp = wmi_evaluate_method(0x4647574D, 0x00020013, 0x0);
+    int temp = wmi_evaluate_method(ASUS_WMI_METHODID_FGWM, ASUS_WMI_DEVID_CPU_TEMPERATURE, 0x0);
     if (temp == -1) {
         temp = 60;
     }
@@ -565,11 +551,6 @@ bool AsusSMC::setFanSpeed() {
         FCNT = 0;
         
         uint32_t res;
-//        OSNumber *arg = OSNumber::withNumber(static_cast<uint32_t>(FTA2[idx]), 32);
-//        ec0Device->evaluateInteger("ST98", &res, (OSObject **)&arg, 1);
-//        arg->release();
-//
-//        DBGLOG("fan", "setFanSpeed call ST98 %u", FTA2[idx]);
         
         OSObject *params[2];
         
