@@ -328,7 +328,7 @@ void AsusSMC::initEC0Device() {
     auto dict = IOService::nameMatching("AppleACPIPlatformExpert");
     if (!dict) {
         SYSLOG("ec0", "WTF? Failed to create matching dictionary");
-        isTACHAvailable = false;
+        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -337,7 +337,7 @@ void AsusSMC::initEC0Device() {
 
     if (!acpi) {
         SYSLOG("ec0", "WTF? No ACPI");
-        isTACHAvailable = false;
+        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -346,7 +346,7 @@ void AsusSMC::initEC0Device() {
     dict = IOService::nameMatching("PNP0C09");
     if (!dict) {
         SYSLOG("ec0", "WTF? Failed to create matching dictionary");
-        isTACHAvailable = false;
+        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -355,7 +355,7 @@ void AsusSMC::initEC0Device() {
 
     if (!deviceIterator) {
         SYSLOG("ec0", "No iterator");
-        isTACHAvailable = false;
+        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
@@ -364,13 +364,13 @@ void AsusSMC::initEC0Device() {
 
     if (!ec0Device) {
         SYSLOG("ec0", "PNP0C09 device not found");
-        isTACHAvailable = false;
+        isFanModEnabled = isTACHAvailable = false;
         return;
     }
 
     if (ec0Device->validateObject("TACH") != kIOReturnSuccess || !refreshFan()) {
         SYSLOG("ec0", "No functional method TACH on EC0 device");
-        isTACHAvailable = false;
+        isFanModEnabled = isTACHAvailable = false;
     }
     
 //    if (ec0Device->validateObject("ST98") != kIOReturnSuccess && !isFanModEnabled) {
@@ -450,52 +450,67 @@ void AsusSMC::initFanMod() {
         return;
     }
 
-    uint32_t res;
-
-    // This disables built-in EC fan mechanism, so only the kext can control the fan
-    // Resetting this is needed on reboot, use an SSDT
-    res = writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL);
-
-    DBGLOG("fan", "Manual control mode result %u", res);
-
     OSObject *tempProps = getProperty("Temperatures");
     OSObject *fanSpeedProps = getProperty("FanSpeeds");
+    
+    if (!tempProps || !fanSpeedProps) {
+        isFanModEnabled = false;
+        DBGLOG("fan", "No Temperatures or FanSpeeds found");
+        return;
+    }
+
 
     OSArray *tempArray = OSDynamicCast(OSArray, tempProps);
     OSArray *fanSpeedArray = OSDynamicCast(OSArray, fanSpeedProps);
     
-    unsigned int tempArraySize = tempArray->getCount();
-    unsigned int fanSpeedArraySize = fanSpeedArray->getCount();
+    uint32_t tempArraySize = tempArray->getCount();
+    uint32_t fanSpeedArraySize = fanSpeedArray->getCount();
 
     if (!tempArray || !fanSpeedArray || tempArraySize != fanSpeedArraySize) {
-        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
         isFanModEnabled = false;
-        DBGLOG("fan", "Temperatures or FanSpeeds empty or size mismatch, reset fan mode to auto");
+        DBGLOG("fan", "Temperatures or FanSpeeds empty or size mismatch");
         return;
     }
 
-    for (unsigned int i = 0; i < tempArraySize; ++i) {
+    fanPropArraySize = tempArraySize;
+
+    FTA1 = (uint32_t *)IOMalloc(fanPropArraySize * sizeof(uint32_t));
+    FTA2 = (uint32_t *)IOMalloc(fanPropArraySize * sizeof(uint32_t));
+
+    for (unsigned int i = 0; i < fanPropArraySize; ++i) {
         OSNumber *tempNum = OSDynamicCast(OSNumber, tempArray->getObject(i));
         OSNumber *fanSpeedNum = OSDynamicCast(OSNumber, fanSpeedArray->getObject(i));
         if (tempNum != nullptr) {
             FTA1[i] = tempNum->unsigned32BitValue();
             DBGLOG("fan", "Temperature %u", FTA1[i]);
         } else {
-            break;
+            IOFree(FTA1, fanPropArraySize);
+            isFanModEnabled = false;
+            DBGLOG("fan", "Temperature entry invalid at %u", i);
+            return;
         }
         if (fanSpeedNum != nullptr) {
             FTA2[i] = fanSpeedNum->unsigned32BitValue();
             DBGLOG("fan", "Fan Speed %u", FTA2[i]);
         } else {
-            break;
+            IOFree(FTA2, fanPropArraySize);
+            isFanModEnabled = false;
+            DBGLOG("fan", "Fan Speed entry invalid at %u", i);
+            return;
         }
     }
+    
+    uint32_t res;
 
-    if (!arrsize(FTA1) || !arrsize(FTA2) || arrsize(FTA1) != arrsize(FTA2)) {
-        writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_AUTO);
+    // This disables built-in EC fan mechanism, so only the kext can control the fan
+    // Resetting this is needed on reboot, use an SSDT
+    res = writeEcRam(FAN_MODE_EC_OFFSET, FAN_MODE_MANUAL);
+
+    if (res == 0) {
+        IOFree(FTA1, fanPropArraySize);
+        IOFree(FTA2, fanPropArraySize);
         isFanModEnabled = false;
-        DBGLOG("fan", "Temperatures or FanSpeeds entry invalid, reset fan mode to auto");
-        return;
+        DBGLOG("fan", "Setting manual control mode failed");
     }
 }
 
@@ -528,14 +543,14 @@ bool AsusSMC::setFanSpeed() {
     DBGLOG("fan", "setFanSpeed average temp %u", avgtemp);
 
     uint32_t idx = -1;
-    for (uint32_t i = 0, count = static_cast<uint32_t>(arrsize(FTA1)); i < count; i++) {
+    for (uint32_t i = 0; i < fanPropArraySize; i++) {
         if (FTA1[i] >= avgtemp) {
             idx = i;
             break;
         }
     }
     if (idx == -1) {
-        idx = static_cast<uint32_t>(arrsize(FTA1)) - 1;
+        idx = fanPropArraySize - 1;
     }
 
     if (idx == FLST) {

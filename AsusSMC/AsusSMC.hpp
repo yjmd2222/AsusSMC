@@ -120,12 +120,9 @@ private:
     static constexpr uint32_t FAN_MODE_MANUAL = 0x35;
     static constexpr uint32_t FAN_MODE_AUTO = 0X85;
 
-//    static constexpr uint32_t
-
-    uint32_t FTA1[22];
-    uint32_t FTA2[22];
-//    static constexpr uint32_t FTA1[] = { 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 0xFF };
-//    static constexpr uint32_t FTA2[] = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 160, 185, 205, 225, 245, 250, 255 };
+    uint32_t fanPropArraySize;
+    uint32_t *FTA1;
+    uint32_t *FTA2;
     static constexpr uint32_t FCTU = 2;
     static constexpr uint32_t FCTD = 5;
 
