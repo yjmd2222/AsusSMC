@@ -49,6 +49,7 @@ public:
     void letSleep();
     void toggleAirplaneMode();
     void toggleTouchpad();
+    void openDisplaySettings();
     void toggleALS(bool state);
     void toggleBatteryConservativeMode(bool state);
     void displayOff();
@@ -83,6 +84,7 @@ private:
         kDaemonAirplaneMode = 2,
         kDaemonSleep = 3,
         kDaemonTouchpad = 4,
+        kDaemonDisplaySettings = 5,
     };
 
     static constexpr uint32_t SensorUpdateTimeoutMS {1000};

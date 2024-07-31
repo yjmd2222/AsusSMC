@@ -36,6 +36,7 @@ enum {
     kDaemonAirplaneMode = 2,
     kDaemonSleep = 3,
     kDaemonTouchpad = 4,
+    kDaemonDisplaySettings = 5,
 };
 
 struct AsusSMCMessage {
@@ -135,14 +136,21 @@ void toggleAirplaneMode() {
     NSError *err = nil;
 
     if (airplaneModeEnabled) {
+        showOSD(OSDGraphicNoWiFi, 0, 0);
         lastWifiState = currentInterface.powerOn;
         lastBluetoothState = IOBluetoothPreferenceGetControllerPowerState();
         [currentInterface setPower:NO error:&err];
         IOBluetoothPreferenceSetControllerPowerState(0);
     } else {
+        showOSD(OSDGraphicHotspot, 0, 0);
         [currentInterface setPower:lastWifiState error:&err];
         IOBluetoothPreferenceSetControllerPowerState(lastBluetoothState);
     }
+}
+
+void openDisplaySettings() {
+    NSURL * url = [NSURL fileURLWithPath:@"/System/Library/PreferencePanes/Displays.prefPane"];
+    [[NSWorkspace sharedWorkspace] openURL:url];
 }
 
 int main(int argc, const char *argv[]) {
@@ -220,6 +228,9 @@ int main(int argc, const char *argv[]) {
                     break;
                 case kDaemonSleep:
                     goToSleep();
+                    break;
+                case kDaemonDisplaySettings:
+                    openDisplaySettings();
                     break;
                 //default:
                     //printf("unknown type %d\n", message->type);

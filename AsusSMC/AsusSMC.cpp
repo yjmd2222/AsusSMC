@@ -521,7 +521,7 @@ void AsusSMC::handleMessage(int code) {
             break;
 
         case 0x61: // Video Mirror
-            dispatchTCReport(kHIDUsage_AV_TopCase_VideoMirror);
+            openDisplaySettings();
             break;
 
         case 0x6B: // Fn + F9, Touchpad On/Off
@@ -593,6 +593,10 @@ void AsusSMC::toggleTouchpad() {
     }
 }
 
+void AsusSMC::openDisplaySettings() {
+    kev.sendMessage(kDaemonDisplaySettings, 0, 0);
+}
+
 void AsusSMC::toggleALS(bool state) {
     if (wmi_evaluate_method(ASUS_WMI_METHODID_DEVS, ASUS_WMI_DEVID_ALS_ENABLE, state ? 1 : 0) == -1) {
         SYSLOG("atk", "Failed to %s ALSC", state ? "enable" : "disable");
@@ -620,7 +624,7 @@ void AsusSMC::displayOff() {
         // Read Panel brigthness value to restore later with backlight toggle
         readPanelBrightnessValue();
 
-        dispatchTCReport(kHIDUsage_AV_TopCase_BrightnessDown, 16);
+        dispatchTCReport(kHIDUsage_AV_TopCase_BrightnessDown, panelBrightnessLevel);
     } else {
         dispatchTCReport(kHIDUsage_AV_TopCase_BrightnessUp, panelBrightnessLevel);
     }
