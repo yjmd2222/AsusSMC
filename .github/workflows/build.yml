@@ -14,7 +14,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: macos-13
+    runs-on: macos-latest
     env:
       JOB_TYPE: BUILD
     steps:
@@ -25,13 +25,13 @@ jobs:
           path: MacKernelSDK
       - name: CI Bootstrap
         run: |
-          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/refs/heads/master/ci-bootstrap.sh) && eval "$src" || exit 1
+          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/ci-bootstrap.sh) && eval "$src" || exit 1
       - name: Lilu Bootstrap
         run: |
-          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/Lilu/refs/heads/master/Lilu/Scripts/bootstrap.sh) && eval "$src" || exit 1
+          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/Lilu/master/Lilu/Scripts/bootstrap.sh) && eval "$src" || exit 1
       - name: AsusSMC Bootstrap
         run: |
-          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/yjmd2222/AsusSMC/refs/heads/master/Scripts/bootstrap.sh) && eval "$src" || exit 1
+          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/hieplpvip/AsusSMC/master/Scripts/bootstrap.sh) && eval "$src" || exit 1
       - run: xcodebuild -jobs 1 -configuration Debug
       - run: xcodebuild -jobs 1 -configuration Release
 
@@ -51,7 +51,7 @@ jobs:
 
   analyze-clang:
     name: Analyze Clang
-    runs-on: macos-13
+    runs-on: macos-latest
     env:
       JOB_TYPE: ANALYZE
     steps:
@@ -62,13 +62,13 @@ jobs:
           path: MacKernelSDK
       - name: CI Bootstrap
         run: |
-          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/refs/heads/master/ci-bootstrap.sh) && eval "$src" || exit 1
+          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/ci-bootstrap.sh) && eval "$src" || exit 1
       - name: Lilu Bootstrap
         run: |
-          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/Lilu/refs/heads/master/Lilu/Scripts/bootstrap.sh) && eval "$src" || exit 1
+          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/Lilu/master/Lilu/Scripts/bootstrap.sh) && eval "$src" || exit 1
       - name: AsusSMC Bootstrap
         run: |
-          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/yjmd2222/AsusSMC/refs/heads/master/Scripts/bootstrap.sh) && eval "$src" || exit 1
+          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/hieplpvip/AsusSMC/master/Scripts/bootstrap.sh) && eval "$src" || exit 1
       - run: xcodebuild analyze -quiet -scheme AsusSMC -configuration Debug CLANG_ANALYZER_OUTPUT=plist-html CLANG_ANALYZER_OUTPUT_DIR="$(pwd)/clang-analyze" && [ "$(find clang-analyze -name "*.html")" = "" ]
       - run: xcodebuild analyze -quiet -scheme AsusSMC -configuration Release CLANG_ANALYZER_OUTPUT=plist-html CLANG_ANALYZER_OUTPUT_DIR="$(pwd)/clang-analyze" && [ "$(find clang-analyze -name "*.html")" = "" ]
 
