@@ -93,6 +93,8 @@ private:
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MIN = 0x20;
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MAX = 0x2F;
 
+    #define kIOPMNumberPowerStates     2
+
     static IOPMPowerState IOPMPowerStates[kIOPMNumberPowerStates] = {
         {1, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, 0, 0, 0, 0, 0, 0, 0, 0},
         {1, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, 0, 0, 0, 0, 0, 0, 0, 0}
