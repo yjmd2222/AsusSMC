@@ -27,6 +27,10 @@
 #define ASUS_WMI_MGMT_GUID             "97845ED0-4E6D-11DE-8A39-0800200C9A66"
 
 #define kIOPMNumberPowerStates     2
+static IOPMPowerState IOPMPowerStates[kIOPMNumberPowerStates] = {
+    {1, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, 0, 0, 0, 0, 0, 0, 0, 0}
+};
 
 #define kDeliverNotifications "RM,deliverNotifications"
 
@@ -95,10 +99,6 @@ private:
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MIN = 0x20;
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MAX = 0x2F;
 
-    static IOPMPowerState IOPMPowerStates[kIOPMNumberPowerStates] = {
-        {1, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, 0, 0, 0, 0, 0, 0, 0, 0},
-        {1, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, 0, 0, 0, 0, 0, 0, 0, 0}
-    };
     void reinitOnWake();
 
     char wmi_method[5];
