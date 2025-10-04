@@ -93,6 +93,12 @@ private:
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MIN = 0x20;
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MAX = 0x2F;
 
+    static IOPMPowerState IOPMPowerStates[kIOPMNumberPowerStates] = {
+        {1, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, 0, 0, 0, 0, 0, 0, 0, 0}
+    };
+    void reinitOnWake();
+
     char wmi_method[5];
     int wmi_parse_guid(const char *in, char *out);
     int wmi_evaluate_method(uint32_t method_id, uint32_t arg0, uint32_t arg1);

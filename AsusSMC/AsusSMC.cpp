@@ -138,6 +138,36 @@ void AsusSMC::stop(IOService *provider) {
     return;
 }
 
+IOReturn AsusSMC::setPowerState(unsigned long powerStateOrdinal, IOService * whatDevice) {
+    if (super::setPowerState(powerStateOrdinal, whatDevice) != kIOPMAckImplied)
+        return kIOReturnInvalid;
+
+    if (powerStateOrdinal == 0) {
+        if (awake) {
+            poller->disable();
+            workLoop->removeEventSource(poller);
+            awake = false;
+            // DebugLog("Going to sleep");
+        }
+    } else {
+        if (!awake && ready) {
+            awake = true;
+            workLoop->addEventSource(poller);
+            poller->setTimeoutMS(SensorUpdateTimeoutMS);
+            poller->enable();
+            // DebugLog("Woke up");
+
+            reinitOnWake();
+        }
+    }
+    return kIOPMAckImplied;
+}
+
+void AsusSMC::reinitOnWake() {
+    initATKDevice();
+    initBattery();
+}
+
 IOReturn AsusSMC::message(uint32_t type, IOService *provider, void *argument) {
     DBGLOG("atk", "Received message: %u Type %x Provider %s", *((uint32_t *)argument), type, provider ? provider->getName() : "unknown");
 
