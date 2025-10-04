@@ -145,14 +145,14 @@ IOReturn AsusSMC::setPowerState(unsigned long powerStateOrdinal, IOService * wha
     if (powerStateOrdinal == 0) {
         if (awake) {
             poller->disable();
-            workLoop->removeEventSource(poller);
+            workloop->removeEventSource(poller);
             awake = false;
             // DebugLog("Going to sleep");
         }
     } else {
         if (!awake && ready) {
             awake = true;
-            workLoop->addEventSource(poller);
+            workloop->addEventSource(poller);
             poller->setTimeoutMS(SensorUpdateTimeoutMS);
             poller->enable();
             // DebugLog("Woke up");
