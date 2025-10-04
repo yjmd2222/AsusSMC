@@ -58,6 +58,7 @@ public:
     void toggleALS(bool state);
     void toggleBatteryConservativeMode(bool state);
     void displayOff();
+    virtual IOReturn setPowerState(unsigned long powerStateOrdinal, IOService * whatDevice) APPLE_KEXT_OVERRIDE;
 
 private:
     struct guid_block {
