@@ -108,6 +108,11 @@ bool AsusSMC::start(IOService *provider) {
 
     registerService();
 
+    // set of things to do for setPowerState to work
+    PMinit();
+    provider->joinPMtree(this);
+    registerPowerDriver(this, IOPMPowerStates, kIOPMNumberPowerStates);
+
     return true;
 }
 
@@ -134,8 +139,39 @@ void AsusSMC::stop(IOService *provider) {
 
     OSSafeReleaseNULL(kbdDevice);
 
+    // pair up with PMinit()
+    PMstop();
+
     super::stop(provider);
     return;
+}
+
+IOReturn AsusSMC::setPowerState(unsigned long powerStateOrdinal, IOService * whatDevice) {
+    // allow things to be configured on sleep and wake
+    // currently calling reinitOnWake() on wake for hibernation resume,
+    // required for atk methods that rely on EC (EC is reset on cold boot, where hibernation falls in the category
+    if (super::setPowerState(powerStateOrdinal, whatDevice) != kIOPMAckImplied)
+        return kIOReturnInvalid;
+
+    if (powerStateOrdinal == 0) {
+        poller->disable();
+        workloop->removeEventSource(poller);
+        // DebugLog("Going to sleep");
+    } else {
+        workloop->addEventSource(poller);
+        poller->setTimeoutMS(SensorUpdateTimeoutMS);
+        poller->enable();
+        // DebugLog("Woke up");
+
+        reinitOnWake();
+    }
+    return kIOPMAckImplied;
+}
+
+void AsusSMC::reinitOnWake() {
+    DBGLOG("test", "Reinit function called on wake");
+    initATKDevice();
+    initBattery();
 }
 
 IOReturn AsusSMC::message(uint32_t type, IOService *provider, void *argument) {

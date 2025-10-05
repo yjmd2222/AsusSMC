@@ -26,6 +26,12 @@
 #define ASUS_WMI_DSTS_PRESENCE_BIT     0x00010000
 #define ASUS_WMI_MGMT_GUID             "97845ED0-4E6D-11DE-8A39-0800200C9A66"
 
+#define kIOPMNumberPowerStates     2
+static IOPMPowerState IOPMPowerStates[kIOPMNumberPowerStates] = {
+    {1, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, kIOServicePowerCapabilityOff, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, kIOServicePowerCapabilityOn, 0, 0, 0, 0, 0, 0, 0, 0}
+};
+
 #define kDeliverNotifications "RM,deliverNotifications"
 
 #define AsusSMCEventCode 0x8102
@@ -53,6 +59,7 @@ public:
     void toggleALS(bool state);
     void toggleBatteryConservativeMode(bool state);
     void displayOff();
+    IOReturn setPowerState(unsigned long powerStateOrdinal, IOService * whatDevice) APPLE_KEXT_OVERRIDE;
 
 private:
     struct guid_block {
@@ -94,6 +101,8 @@ private:
 
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MIN = 0x20;
     static constexpr uint8_t NOTIFY_BRIGHTNESS_DOWN_MAX = 0x2F;
+
+    void reinitOnWake();
 
     char wmi_method[5];
     int wmi_parse_guid(const char *in, char *out);
