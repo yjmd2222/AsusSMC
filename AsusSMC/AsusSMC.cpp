@@ -90,6 +90,11 @@ bool AsusSMC::start(IOService *provider) {
         DBGLOG("atk", "Could not open command gate");
         return false;
     }
+    
+    // set of things to do for setPowerState to work 1: registering power states
+    PMinit();
+    provider->joinPMtree(this);
+    registerPowerDriver(this, IOPMPowerStates, kIOPMNumberPowerStates);
 
     setProperty("IsTouchpadEnabled", true);
     setProperty("Copyright", "Copyright © 2018-2020 Le Bao Hiep. All rights reserved.");
@@ -108,10 +113,9 @@ bool AsusSMC::start(IOService *provider) {
 
     registerService();
 
-    // set of things to do for setPowerState to work
-    PMinit();
-    provider->joinPMtree(this);
-    registerPowerDriver(this, IOPMPowerStates, kIOPMNumberPowerStates);
+    // set of things to do for setPowerState to work 2: only when available
+    awake = true;
+    ready = true;
 
     return true;
 }
@@ -150,20 +154,23 @@ IOReturn AsusSMC::setPowerState(unsigned long powerStateOrdinal, IOService * wha
     // allow things to be configured on sleep and wake
     // currently calling reinitOnWake() on wake for hibernation resume,
     // required for atk methods that rely on EC (EC is reset on cold boot, where hibernation falls in the category
-    if (super::setPowerState(powerStateOrdinal, whatDevice) != kIOPMAckImplied)
-        return kIOReturnInvalid;
-
     if (powerStateOrdinal == 0) {
-        poller->disable();
-        workloop->removeEventSource(poller);
-        // DebugLog("Going to sleep");
+        if (awake) {
+            poller->disable();
+            workloop->removeEventSource(poller);
+            awake = false;
+            // DebugLog("Going to sleep");
+        }
     } else {
-        workloop->addEventSource(poller);
-        poller->setTimeoutMS(SensorUpdateTimeoutMS);
-        poller->enable();
-        // DebugLog("Woke up");
-
-        reinitOnWake();
+        if (!awake && ready) {
+            awake = true;
+            workloop->addEventSource(poller);
+            poller->setTimeoutMS(SensorUpdateTimeoutMS);
+            poller->enable();
+            // DebugLog("Woke up");
+            
+            reinitOnWake();
+        }
     }
     return kIOPMAckImplied;
 }
