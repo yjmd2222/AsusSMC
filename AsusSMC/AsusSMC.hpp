@@ -44,6 +44,10 @@ class AsusSMC : public IOService {
         parseModuleVersion(xStringify(MODULE_VERSION)),
         VirtualSMCAPI::Version,
     };
+    
+protected:
+    bool awake {false};
+    bool ready {false};
 
 public:
     bool init(OSDictionary *dictionary) override;
