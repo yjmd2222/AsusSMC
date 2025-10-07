@@ -90,6 +90,11 @@ bool AsusSMC::start(IOService *provider) {
         DBGLOG("atk", "Could not open command gate");
         return false;
     }
+    
+    // set of things to do for setPowerState to work 1: registering power states
+    PMinit();
+    provider->joinPMtree(this);
+    registerPowerDriver(this, IOPMPowerStates, kIOPMNumberPowerStates);
 
     setProperty("IsTouchpadEnabled", true);
     setProperty("Copyright", "Copyright © 2018-2020 Le Bao Hiep. All rights reserved.");
@@ -107,6 +112,10 @@ bool AsusSMC::start(IOService *provider) {
     registerVSMC();
 
     registerService();
+
+    // set of things to do for setPowerState to work 2: only when available
+    awake = true;
+    ready = true;
 
     return true;
 }
@@ -134,8 +143,42 @@ void AsusSMC::stop(IOService *provider) {
 
     OSSafeReleaseNULL(kbdDevice);
 
+    // pair up with PMinit()
+    PMstop();
+
     super::stop(provider);
     return;
+}
+
+IOReturn AsusSMC::setPowerState(unsigned long powerStateOrdinal, IOService * whatDevice) {
+    // allow things to be configured on sleep and wake
+    // currently calling reinitOnWake() on wake for hibernation resume,
+    // required for atk methods that rely on EC (EC is reset on cold boot, where hibernation falls in the category
+    if (powerStateOrdinal == 0) {
+        if (awake) {
+            poller->disable();
+            workloop->removeEventSource(poller);
+            awake = false;
+            // DebugLog("Going to sleep");
+        }
+    } else {
+        if (!awake && ready) {
+            awake = true;
+            workloop->addEventSource(poller);
+            poller->setTimeoutMS(SensorUpdateTimeoutMS);
+            poller->enable();
+            // DebugLog("Woke up");
+            
+            reinitOnWake();
+        }
+    }
+    return kIOPMAckImplied;
+}
+
+void AsusSMC::reinitOnWake() {
+    DBGLOG("test", "Reinit function called on wake");
+    initATKDevice();
+    initBattery();
 }
 
 IOReturn AsusSMC::message(uint32_t type, IOService *provider, void *argument) {
@@ -521,7 +564,7 @@ void AsusSMC::handleMessage(int code) {
             break;
 
         case 0x61: // Video Mirror
-            dispatchTCReport(kHIDUsage_AV_TopCase_VideoMirror);
+            openDisplaySettings();
             break;
 
         case 0x6B: // Fn + F9, Touchpad On/Off
@@ -593,6 +636,10 @@ void AsusSMC::toggleTouchpad() {
     }
 }
 
+void AsusSMC::openDisplaySettings() {
+    kev.sendMessage(kDaemonDisplaySettings, 0, 0);
+}
+
 void AsusSMC::toggleALS(bool state) {
     if (wmi_evaluate_method(ASUS_WMI_METHODID_DEVS, ASUS_WMI_DEVID_ALS_ENABLE, state ? 1 : 0) == -1) {
         SYSLOG("atk", "Failed to %s ALSC", state ? "enable" : "disable");
@@ -620,7 +667,7 @@ void AsusSMC::displayOff() {
         // Read Panel brigthness value to restore later with backlight toggle
         readPanelBrightnessValue();
 
-        dispatchTCReport(kHIDUsage_AV_TopCase_BrightnessDown, 16);
+        dispatchTCReport(kHIDUsage_AV_TopCase_BrightnessDown, panelBrightnessLevel);
     } else {
         dispatchTCReport(kHIDUsage_AV_TopCase_BrightnessUp, panelBrightnessLevel);
     }
